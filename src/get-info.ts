@@ -7,24 +7,16 @@ export function buildPluginInfo(): InfoContract {
     uuid: PLUGIN_ID,
     iconUrl: "https://www.rumanhua2.com/static/images/logo.png",
     creator: {
-      name: "rumanhua",
-      describe: "如漫画源插件",
+      name: "",
+      describe: "",
     },
-    describe: "如漫画源插件，支持搜索、漫画详情、在线阅读",
+    describe: "如漫画源插件",
     version: "0.0.1",
-    home: "http://www.rumanhua2.com",
-    updateUrl: "",
-    npmName: "breeze-plugin-rumanhua",
-    function: [
-      {
-        id: "search",
-        title: "搜索",
-        action: {
-          type: "openSearch",
-          payload: { source: PLUGIN_ID },
-        },
-      },
-    ],
+    home: "https://github.com/deretame/Breeze-plugin-RuManHua",
+    updateUrl:
+      "https://api.github.com/repos/deretame/Breeze-plugin-RuManHua/releases/latest",
+    npmName: "breeze-plugin-ru-man-hua",
+    function: [],
   };
 }
 

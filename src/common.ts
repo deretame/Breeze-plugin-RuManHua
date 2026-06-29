@@ -1,5 +1,3 @@
-import * as cheerio from "cheerio";
-
 import type {
   ActionItem,
   ChapterSummary,
@@ -189,7 +187,7 @@ export async function postForm(
 }
 
 function loadHtml(html: string) {
-  return cheerio.load(html);
+  return BreezeHtml.load(html);
 }
 
 function spanTextAfter($: ReturnType<typeof loadHtml>, label: string): string {

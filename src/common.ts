@@ -6,7 +6,7 @@ import type {
   MetadataListItem,
   PagingInfo,
   StringMap,
-} from "../types/type";
+} from "breeze-plugin-kit";
 
 export const PLUGIN_ID = "4c2f8df0-3916-4924-b4cd-4e6b8d340a73";
 export const BASE_URL = "http://www.rumanhua2.com";

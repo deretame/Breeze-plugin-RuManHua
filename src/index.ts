@@ -9,7 +9,7 @@ import type {
   SearchComicPayload,
   SearchResultContract,
   SettingsBundleContract,
-} from "../types/type";
+} from "breeze-plugin-kit";
 import {
   BASE_URL,
   PLUGIN_ID,

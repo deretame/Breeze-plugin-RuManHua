@@ -11,7 +11,7 @@ export function buildPluginInfo(): InfoContract {
       describe: "",
     },
     describe: "如漫画源插件",
-    version: "0.0.2",
+    version: "0.0.3",
     home: "https://github.com/deretame/Breeze-plugin-RuManHua",
     updateUrl:
       "https://api.github.com/repos/deretame/Breeze-plugin-RuManHua/releases/latest",

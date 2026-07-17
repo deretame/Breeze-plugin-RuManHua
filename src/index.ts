@@ -79,12 +79,12 @@ async function getComicDetail(
     throw new Error("comicId 不能为空");
   }
 
-  const [html, chapters] = await Promise.all([
-    fetchText(`${BASE_URL}/${comicId}/`, { headers: { Referer: BASE_URL } }),
-    fetchAllChapters(comicId),
-  ]);
-
+  const html = await fetchText(`${BASE_URL}/${comicId}/`, {
+    headers: { Referer: BASE_URL },
+  });
   const info = parseComicDetailInfo(html, comicId);
+  // 页面含较新章节，/morechapter 含更早章节，需合并
+  const chapters = await fetchAllChapters(comicId, html);
 
   const normal = {
     comicInfo: {

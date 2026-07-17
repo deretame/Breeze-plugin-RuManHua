@@ -261,22 +261,85 @@ export function parseComicDetailInfo(
   };
 }
 
-export async function fetchAllChapters(
-  comicId: string,
-): Promise<ChapterSummary[]> {
+interface RawChapter {
+  chapterid: string;
+  chaptername: string;
+}
+
+/**
+ * 详情页默认只渲染较新的章节，更早的章节在 /morechapter。
+ * 两者都是「最新在前」，合并时先页面章节再 morechapter，再反转成阅读顺序。
+ */
+export function parseChaptersFromHtml(html: string): RawChapter[] {
+  const $ = loadHtml(html);
+  const list: RawChapter[] = [];
+  $(".chapterlistload a").each((_, el) => {
+    const href = $(el).attr("href") ?? "";
+    const match = href.match(/\/([^/]+)\.html(?:\?.*)?$/);
+    if (!match) return;
+    const name = $(el).find("li").first().text().trim() || $(el).text().trim();
+    if (!name) return;
+    list.push({ chapterid: match[1], chaptername: name });
+  });
+  return list;
+}
+
+async function fetchMoreChapters(comicId: string): Promise<RawChapter[]> {
   const json = await postForm(`${BASE_URL}/morechapter`, { id: comicId });
   const parsed = JSON.parse(json) as {
     code: string;
     msg?: string;
-    data?: Array<{ chapterid: string; chaptername: string }>;
+    data?: RawChapter[];
   };
   if (parsed.code !== "200") {
     throw new Error(parsed.msg || "获取章节列表失败");
   }
+  return parsed.data ?? [];
+}
 
-  const list = parsed.data ?? [];
-  // /morechapter 返回最新章节在前，需要反转成阅读顺序
-  const reversed = [...list].reverse();
+function mergeChaptersNewestFirst(
+  pageChapters: RawChapter[],
+  moreChapters: RawChapter[],
+): RawChapter[] {
+  const seen = new Set<string>();
+  const merged: RawChapter[] = [];
+  // 页面上是较新章节，morechapter 是更早章节；都按最新在前排列
+  for (const item of [...pageChapters, ...moreChapters]) {
+    const id = String(item.chapterid ?? "").trim();
+    const name = String(item.chaptername ?? "").trim();
+    if (!id || !name || seen.has(id)) continue;
+    seen.add(id);
+    merged.push({ chapterid: id, chaptername: name });
+  }
+  return merged;
+}
+
+export async function fetchAllChapters(
+  comicId: string,
+  html?: string,
+): Promise<ChapterSummary[]> {
+  const pageHtml =
+    html ??
+    (await fetchText(`${BASE_URL}/${comicId}/`, {
+      headers: { Referer: BASE_URL },
+    }));
+
+  const pageChapters = parseChaptersFromHtml(pageHtml);
+
+  let moreChapters: RawChapter[] = [];
+  try {
+    moreChapters = await fetchMoreChapters(comicId);
+  } catch {
+    // morechapter 失败时仍返回页面上的章节
+  }
+
+  const merged = mergeChaptersNewestFirst(pageChapters, moreChapters);
+  if (merged.length === 0) {
+    throw new Error("获取章节列表失败");
+  }
+
+  // 最新在前 → 反转成阅读顺序（第1话起）
+  const reversed = [...merged].reverse();
   return reversed.map((item, index) =>
     createChapterSummary(item.chapterid, item.chaptername, index + 1),
   );

@@ -11,10 +11,7 @@ async function main() {
   console.log("\n=== getComicDetail:", comicId, "===");
   const detail = await plugin.getComicDetail({ comicId });
   console.log("title:", detail.data.normal.comicInfo.title);
-  console.log(
-    "titleMeta:",
-    detail.data.normal.comicInfo.titleMeta.map((m) => m.name).join(" | "),
-  );
+  console.log("titleMeta:", detail.data.normal.comicInfo.titleMeta.map((m) => m.name).join(" | "));
   console.log("chapters count:", detail.data.normal.eps.length);
 
   const chapterId = detail.data.normal.eps[0]?.requestId ?? "NJGMxte";

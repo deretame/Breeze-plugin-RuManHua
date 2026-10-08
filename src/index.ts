@@ -40,9 +40,7 @@ async function getInfo(): Promise<InfoContract> {
 // searchComic
 // ---------------------------------------------------------------------------
 
-async function searchComic(
-  payload: SearchComicPayload = {},
-): Promise<SearchResultContract> {
+async function searchComic(payload: SearchComicPayload = {}): Promise<SearchResultContract> {
   const keyword = String(payload.keyword ?? "").trim();
   if (!keyword) {
     throw new Error("关键词不能为空");
@@ -71,9 +69,7 @@ async function searchComic(
 // getComicDetail
 // ---------------------------------------------------------------------------
 
-async function getComicDetail(
-  payload: ComicDetailPayload = {},
-): Promise<ComicDetailContract> {
+async function getComicDetail(payload: ComicDetailPayload = {}): Promise<ComicDetailContract> {
   const comicId = String(payload.comicId ?? "").trim();
   if (!comicId) {
     throw new Error("comicId 不能为空");
@@ -105,7 +101,7 @@ async function getComicDetail(
           name: "",
           path: "",
         }),
-        onTap: {},
+        onTap: null,
         extern: {},
       },
       description: info.description,
@@ -115,11 +111,7 @@ async function getComicDetail(
         name: "cover.jpg",
         path: `comic/${comicId}/cover.jpg`,
       }),
-      metadata: [
-        // createMetadataActionList("author", "作者", [info.author]),
-        // createMetadataActionList("tags", "标签", info.tags),
-        // createMetadataActionList("status", "状态", [info.status]),
-      ],
+      metadata: [],
       extern: {},
     },
     eps: chapters,
@@ -130,9 +122,13 @@ async function getComicDetail(
     isFavourite: false,
     isLiked: false,
     allowComments: false,
+    allowCommentsReason: "如漫画暂不支持评论",
     allowLike: false,
+    allowLikeReason: "如漫画暂不支持点赞",
     allowCollected: false,
+    allowCollectedReason: "如漫画暂不支持收藏",
     allowDownload: false,
+    allowDownloadReason: "如漫画暂不支持下载",
     extern: {},
   };
 
@@ -153,9 +149,7 @@ async function getComicDetail(
 // getReadSnapshot
 // ---------------------------------------------------------------------------
 
-async function getReadSnapshot(
-  payload: ReadSnapshotPayload = {},
-): Promise<ReadSnapshotContract> {
+async function getReadSnapshot(payload: ReadSnapshotPayload = {}): Promise<ReadSnapshotContract> {
   const comicId = String(payload.comicId ?? "").trim();
   const chapterId = String(payload.chapterId ?? "").trim();
   if (!comicId) {
@@ -176,13 +170,9 @@ async function getReadSnapshot(
   const cipher = extractCipher(chapterHtml);
   const imageUrls = decryptChapterImages(cipher, readerId);
 
-  const currentIndex = chapters.findIndex(
-    (c) => c.id === chapterId || c.requestId === chapterId,
-  );
+  const currentIndex = chapters.findIndex((c) => c.id === chapterId || c.requestId === chapterId);
   const currentChapter =
-    currentIndex >= 0
-      ? chapters[currentIndex]
-      : createChapterSummary(chapterId, "未知章节", 0);
+    currentIndex >= 0 ? chapters[currentIndex] : createChapterSummary(chapterId, "未知章节", 0);
 
   const pages: ChapterPage[] = imageUrls.map((url, idx) => ({
     id: `${chapterId}-p-${idx + 1}`,
@@ -192,9 +182,7 @@ async function getReadSnapshot(
     extern: {},
   }));
 
-  const titleMatch = chapterHtml.match(
-    /<meta[^>]+property="og:comicname"[^>]+content="([^"]+)"/,
-  );
+  const titleMatch = chapterHtml.match(/<meta[^>]+property="og:comicname"[^>]+content="([^"]+)"/);
   const comicTitle = titleMatch?.[1] ?? "";
 
   return {

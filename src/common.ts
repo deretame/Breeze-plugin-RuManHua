@@ -1,6 +1,7 @@
 import type {
   ActionItem,
   ChapterSummary,
+  ComicInfoPageAction,
   ComicListItem,
   ImageItem,
   MetadataListItem,
@@ -10,8 +11,7 @@ import type {
 
 export const PLUGIN_ID = "4c2f8df0-3916-4924-b4cd-4e6b8d340a73";
 export const BASE_URL = "http://www.rumanhua2.com";
-export const PLACEHOLDER_IMAGE_URL =
-  "https://www.rumanhua2.com/static/images/logo.png";
+export const PLACEHOLDER_IMAGE_URL = "https://www.rumanhua2.com/static/images/logo.png";
 
 /**
  * 阅读页图片解密 key 表。
@@ -39,7 +39,7 @@ export function toStringMap(value: unknown): StringMap {
 
 export function createActionItem(
   name: unknown,
-  onTap: StringMap = {},
+  onTap: ComicInfoPageAction | null = null,
   extern: StringMap = {},
 ): ActionItem {
   return {
@@ -109,9 +109,7 @@ export function createComicItem(
       name: "cover.png",
       extern: { path },
     }),
-    metadata: [
-      createMetadataActionList("author", "作者", author ? [author] : []),
-    ],
+    metadata: [createMetadataActionList("author", "作者", author ? [author] : [])],
     raw: { id, name: title, author },
     extern: {},
   };
@@ -154,13 +152,10 @@ const DEFAULT_HEADERS: Record<string, string> = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 };
 
-export async function fetchText(
-  url: string,
-  init?: RequestInit,
-): Promise<string> {
+export async function fetchText(url: string, init?: RequestInit): Promise<string> {
   const res = await fetch(url, {
     ...init,
-    headers: { ...DEFAULT_HEADERS, ...(init?.headers ?? {}) },
+    headers: { ...DEFAULT_HEADERS, ...init?.headers },
   });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: ${res.statusText} (${url})`);
@@ -180,7 +175,7 @@ export async function postForm(
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Referer: BASE_URL,
-      ...(init?.headers ?? {}),
+      ...init?.headers,
     },
     body: params.toString(),
   });
@@ -192,9 +187,7 @@ function loadHtml(html: string) {
 
 function spanTextAfter($: ReturnType<typeof loadHtml>, label: string): string {
   const normalizedLabel = label.replace(/[：:]/g, "");
-  const regex = new RegExp(
-    `${normalizedLabel.split("").join("\\s*")}\\s*[：:]\\s*(.+?)\\s*$`,
-  );
+  const regex = new RegExp(`${normalizedLabel.split("").join("\\s*")}\\s*[：:]\\s*(.+?)\\s*$`);
   const found = $("span")
     .filter((_, el) => regex.test($(el).text().trim()))
     .first()
@@ -236,10 +229,7 @@ export interface ComicDetailInfo {
   coverUrl: string;
 }
 
-export function parseComicDetailInfo(
-  html: string,
-  _comicId: string,
-): ComicDetailInfo {
+export function parseComicDetailInfo(html: string, _comicId: string): ComicDetailInfo {
   const $ = loadHtml(html);
 
   const title = $("h1.name_mh").first().text().trim();
@@ -314,10 +304,7 @@ function mergeChaptersNewestFirst(
   return merged;
 }
 
-export async function fetchAllChapters(
-  comicId: string,
-  html?: string,
-): Promise<ChapterSummary[]> {
+export async function fetchAllChapters(comicId: string, html?: string): Promise<ChapterSummary[]> {
   const pageHtml =
     html ??
     (await fetchText(`${BASE_URL}/${comicId}/`, {
@@ -453,17 +440,14 @@ function splitTopLevel(str: string, delimiter: string): string[] {
 function parseStringLiteral(str: string): string {
   const trimmed = str.trim();
   const quote = trimmed[0];
-  if (
-    (quote !== '"' && quote !== "'" && quote !== "`") ||
-    trimmed[trimmed.length - 1] !== quote
-  ) {
+  if ((quote !== '"' && quote !== "'" && quote !== "`") || trimmed[trimmed.length - 1] !== quote) {
     throw new Error(`不是合法字符串字面量: ${trimmed}`);
   }
 
   return unquoteStringLiteral(trimmed, quote);
 }
 
-function unquoteStringLiteral(trimmed: string, quote: string): string {
+function unquoteStringLiteral(trimmed: string, _quote: string): string {
   let result = "";
   for (let i = 1; i < trimmed.length - 1; i++) {
     const ch = trimmed[i];
@@ -609,10 +593,7 @@ function unpackEdwards(p: string, a: number, c: number, k: string): string {
   function encode(num: number): string {
     const remainder = num % a;
     const prefix = num < a ? "" : encode(Math.floor(num / a));
-    const suffix =
-      remainder > 35
-        ? String.fromCharCode(remainder + 29)
-        : remainder.toString(36);
+    const suffix = remainder > 35 ? String.fromCharCode(remainder + 29) : remainder.toString(36);
     return prefix + suffix;
   }
 
@@ -653,10 +634,7 @@ export function extractReaderId(html: string): number {
  *
  * 流程：base64 解码密文 → 与 key 循环 XOR → 再 base64 解码 → JSON.parse
  */
-export function decryptChapterImages(
-  cipher: string,
-  readerId: number,
-): string[] {
+export function decryptChapterImages(cipher: string, readerId: number): string[] {
   const key = IMAGE_KEYS[readerId];
   if (!key) {
     throw new Error(`不支持的 data-id: ${readerId}`);

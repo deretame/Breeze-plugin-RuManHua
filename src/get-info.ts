@@ -6,15 +6,10 @@ export function buildPluginInfo(): InfoContract {
     name: "如漫画",
     uuid: PLUGIN_ID,
     iconUrl: "https://www.rumanhua2.com/static/images/logo.png",
-    creator: {
-      name: "",
-      describe: "",
-    },
     describe: "如漫画源插件",
-    version: "0.0.3",
+    version: "0.0.4",
     home: "https://github.com/deretame/Breeze-plugin-RuManHua",
-    updateUrl:
-      "https://api.github.com/repos/deretame/Breeze-plugin-RuManHua/releases/latest",
+    updateUrl: "https://api.github.com/repos/deretame/Breeze-plugin-RuManHua/releases/latest",
     npmName: "breeze-plugin-ru-man-hua",
     function: [],
   };

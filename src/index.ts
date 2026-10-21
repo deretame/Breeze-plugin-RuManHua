@@ -2,8 +2,14 @@ import type {
   ChapterPage,
   ComicDetailContract,
   ComicDetailPayload,
+  ComicListScene,
+  ComicPagedListContract,
   FetchImageBytesPayload,
+  FilterBundleContract,
+  GetPluginHomePagesBundlePayload,
   InfoContract,
+  PluginHomePagesBundleContract,
+  PluginHomeTab,
   ReadSnapshotContract,
   ReadSnapshotPayload,
   SearchComicPayload,
@@ -23,6 +29,7 @@ import {
   fetchAllChapters,
   fetchText,
   parseComicDetailInfo,
+  parseRankItems,
   parseSearchItems,
   postForm,
 } from "./common";
@@ -233,6 +240,98 @@ async function fetchImageBytes(
   return new Uint8Array(await res.arrayBuffer());
 }
 
+// ---------------------------------------------------------------------------
+// 榜单 / 分类列表（首页 scene 数据源）
+// ---------------------------------------------------------------------------
+
+const RANK_TITLES: Record<string, string> = {
+  "1": "精品榜",
+  "2": "人气榜",
+  "3": "推荐榜",
+  "4": "黑马榜",
+  "5": "最近更新",
+  "6": "新漫画",
+};
+
+/** 榜单分页数据：extern.type 取 rank id（默认 5 最近更新），站内榜单页无分页，一次返回全部 */
+async function getRankingData(payload: SearchComicPayload = {}): Promise<ComicPagedListContract> {
+  const extern = payload.extern ?? {};
+  const type = String(extern.type ?? "5").trim() || "5";
+  const html = await fetchText(`${BASE_URL}/rank/${encodeURIComponent(type)}`, {
+    headers: { Referer: BASE_URL },
+  });
+  const items = parseRankItems(html);
+  return {
+    source: PLUGIN_ID,
+    extern: payload.extern ?? null,
+    scheme: {
+      version: "1.0.0",
+      type: "rankingFeed",
+      card: "comicGrid",
+    },
+    data: { items, hasReachedMax: true },
+  };
+}
+
+/** 榜单筛选：choice 切换 6 个榜单 */
+async function getRankingFilterBundle(): Promise<FilterBundleContract> {
+  return {
+    source: PLUGIN_ID,
+    scheme: {
+      version: "1.0.0",
+      fields: [
+        {
+          key: "type",
+          kind: "choice" as const,
+          label: "榜单",
+          options: Object.entries(RANK_TITLES).map(([value, label]) => ({
+            label,
+            value,
+            result: { extern: { type: value } },
+          })),
+        },
+      ],
+    },
+    data: { values: { type: "5" } },
+  };
+}
+
+/** 首页排行榜 scene（与榜单数据函数同源，供首页 tab 复用） */
+function buildRankingScene(): ComicListScene {
+  return {
+    title: "最近更新",
+    source: PLUGIN_ID,
+    body: {
+      type: "pluginPagedComicList" as const,
+      request: {
+        fnPath: "getRankingData",
+        core: {},
+        extern: { type: "5" },
+      },
+    },
+    filter: {
+      fnPath: "getRankingFilterBundle",
+      core: {},
+      extern: {},
+    },
+  };
+}
+
+/** 插件首页 — 最近更新 tab（无登录插件只补第一页，不置 haveCloudFavorite） */
+async function getPluginHomePagesBundle(
+  _payload: GetPluginHomePagesBundlePayload = {},
+): Promise<PluginHomePagesBundleContract> {
+  const tabs: PluginHomeTab[] = [{ id: "recent", title: "最近更新", scene: buildRankingScene() }];
+  return {
+    source: PLUGIN_ID,
+    scheme: {
+      version: "1.0.0" as const,
+      type: "homePagesBundle" as const,
+    },
+    data: { tabs },
+  };
+}
+
 async function getSettingsBundle(): Promise<SettingsBundleContract> {
   return {
     source: PLUGIN_ID,
@@ -258,6 +357,10 @@ export default {
   getComicDetail,
   getReadSnapshot,
   fetchImageBytes,
+
+  getRankingData,
+  getRankingFilterBundle,
+  getPluginHomePagesBundle,
 
   getSettingsBundle,
 };

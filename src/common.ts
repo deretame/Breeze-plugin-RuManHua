@@ -219,6 +219,33 @@ export function parseSearchItems(html: string): ComicListItem[] {
   return items;
 }
 
+/**
+ * 解析榜单/分类列表页（/rank/N、/sort/N）。
+ * 条目结构：.likedata > .likeimg a[href=/id/] img[data-src] + .likeinfo .le-t（标题）。
+ */
+export function parseRankItems(html: string): ComicListItem[] {
+  const $ = loadHtml(html);
+  const items: ComicListItem[] = [];
+  $(".likedata").each((_, el) => {
+    const $el = $(el);
+    const link = $el.find(".likeimg a").first().attr("href") ?? "";
+    const id = link.replace(/^\//, "").replace(/\/$/, "");
+    const $img = $el.find(".likeimg img").first();
+    const coverUrl = $img.attr("data-src") ?? $img.attr("src") ?? "";
+    const title = $el.find(".le-t").first().text().trim() || $img.attr("alt") || $img.attr("title") || "";
+    const author = $el
+      .find(".likeinfo p")
+      .filter((_, p) => $(p).text().trim().startsWith("作者："))
+      .first()
+      .text()
+      .replace(/^作者：/, "")
+      .trim();
+    if (!id) return;
+    items.push(createComicItem(id, title, coverUrl, author));
+  });
+  return items;
+}
+
 export interface ComicDetailInfo {
   title: string;
   author: string;
